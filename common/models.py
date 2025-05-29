@@ -1,4 +1,5 @@
 from common.db import db
+from datetime import datetime
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -30,17 +31,15 @@ class Reservation(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id=db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     room_id=db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    start_time = db.Column(db.Time, nullable=False)
-    end_time = db.Column(db.Time, nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
     
-    user = db.relationship('User')
-    room = db.relationship('Room')
+    user = db.relationship('User', backref='reservations')
+    room = db.relationship('Room', backref='reservations')
     
-    def __init__(self, user_id, room_id, date, start_time, end_time):
+    def __init__(self, user_id, room_id, start_time, end_time):
         self.user_id = user_id
         self.room_id = room_id
-        self.date = date
         self.start_time = start_time
         self.end_time = end_time
 
