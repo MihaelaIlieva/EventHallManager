@@ -42,4 +42,13 @@ class Reservation(db.Model):
         self.room_id = room_id
         self.start_time = start_time
         self.end_time = end_time
+        
+    def json(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "room_id": self.room_id,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat()
+        }
 
