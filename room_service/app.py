@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_restful import Api
-from common.db import db
+from common.db import db, init_db
 from flask_sqlalchemy import SQLAlchemy
 from room_service.room_routes import RoomList, RoomDetail
 import sys
@@ -9,10 +9,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///reservation_system.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db.init_app(app)
+init_db(app)
 api = Api(app)
 
 
