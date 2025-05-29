@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 from models.reservation import Reservation
-from db import db
+from common.db import db
 from datetime import datetime
 
 reservation_parser = reqparse.RequestParser()

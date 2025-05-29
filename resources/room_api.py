@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse
 from models.room import Room
-from db import db
+from common.db import db
 
 class Room(Resource):
     def get(self):

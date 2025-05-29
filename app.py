@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restful import Resource, Api
 from flask_sqlalchemy import SQLAlchemy
-from db import db
+from common.db import db
 from models.user import User
 from models.room import Room
 from models.reservation import Reservation
