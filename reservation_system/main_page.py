@@ -16,10 +16,10 @@ SECONDARY_COLOUR = "#e9ca7a"
 class StartWindow:
     def __init__(self, master):
         self.master = master
-        master.title("LuxeHalls")
+        self.master.title("LuxeHalls")
         
-        master.geometry("1720x1060")
-        master.config(bg=MAIN_COLOUR)
+        self.master.geometry("1720x1060")
+        self.master.config(bg=MAIN_COLOUR)
 
         self.title_label = Label(master, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
         
@@ -32,28 +32,31 @@ class StartWindow:
 
         self.background_image = ImageTk.PhotoImage(pil_image)
 
-        image_label = tk.Label(self.master, image=self.background_image, borderwidth=0)
+        image_label = Label(self.master, image=self.background_image, borderwidth=0)
         image_label.pack(pady=50)
         
         self.login_button = Button(master, text="Вход", width=20, font=("Tahoma", 16), command=self.open_login, background=SECONDARY_COLOUR).pack(pady=30)
         self.register_button = Button(master, text="Регистрация", width=20, font=("Tahoma", 16), command=self.open_register, background=SECONDARY_COLOUR).pack(pady=30)
 
     def open_login(self):
+        
         self.master.withdraw()
         login_window = tk.Toplevel()
         LoginWindow(login_window)
 
     def open_register(self):
+        
         self.master.withdraw()
         register_window = tk.Toplevel()
         RegisterWindow(register_window)
 
 class LoginWindow:
     def __init__(self, master):
+        
         self.master = master
-        master.title("Вход")
-        master.geometry("1720x1060")
-        master.config(bg=MAIN_COLOUR)
+        self.master.title("Вход")
+        self.master.geometry("1720x1060")
+        self.master.config(bg=MAIN_COLOUR)
         
         self.title_label = Label(master, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
         
@@ -80,6 +83,7 @@ class LoginWindow:
         self.login_button = Button(master, text="Вход", command=self.login, width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR).pack(pady=20)
 
     def login(self):
+        
         name = self.username_entry.get()
         password = self.password_entry.get()
 
@@ -96,7 +100,7 @@ class LoginWindow:
                 data = response.json()
                 messagebox.showinfo("Успешен вход", f"Добре дошъл, {name}!")
                 self.master.destroy()
-                #UserWindow(name, data.get("token"))
+                UserWindow(name, data.get("token"))
             else:
                 messagebox.showerror("Грешка", "Невалидни данни за вход")
         except Exception as e:
@@ -104,10 +108,11 @@ class LoginWindow:
 
 class RegisterWindow:
     def __init__(self, master):
+        
         self.master = master
-        master.title("Вход")
-        master.geometry("1720x1060")
-        master.config(bg=MAIN_COLOUR)
+        self.master.title("Вход")
+        self.master.geometry("1720x1060")
+        self.master.config(bg=MAIN_COLOUR)
         
         self.title_label = Label(master, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=35)
         
@@ -161,6 +166,50 @@ class RegisterWindow:
                 messagebox.showerror("Грешка", f"Неуспешна регистрация: {response.text}")
         except Exception as e:
             messagebox.showerror("Грешка", f"Проблем с връзката към сървъра:\n{e}")
+
+class UserWindow:
+    def __init__(self, username, token):
+        self.token = token
+        self.username = username
+
+        self.window = tk.Toplevel()
+        self.window.title("Потребителски панел")
+        self.window.geometry("1720x1060")
+        self.window.config(bg=MAIN_COLOUR)
+        
+        self.title_label = Label(self.window, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=35)
+        
+        self.greeting_label = Label(self.window, text=f"Добре дошъл, {username}!", font=("Tahoma", 20), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
+
+        
+        image_path = os.path.join(os.path.dirname(__file__), "images", "image.png")
+        pil_image = Image.open(image_path)
+       
+        max_width, max_height = 650, 350
+        pil_image.thumbnail((max_width, max_height))
+
+        self.background_image = ImageTk.PhotoImage(pil_image)
+
+        image_label = Label(self.window, image=self.background_image, borderwidth=0)
+        image_label.pack(pady=50)
+
+        self.get_halls_button = Button(self.window, text="Виж зали", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=self.load_rooms).pack(pady=20)
+
+        self.get_reservations_button = Button(self.window, text="Виж резервации", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=self.load_reservations).pack(pady=20)
+        
+        self.rooms_listbox = tk.Listbox(self.window)
+        self.rooms_listbox.pack(pady=10, fill=tk.BOTH, expand=True)
+
+        self.window.mainloop()
+
+    def load_rooms(self):
+        return
+
+
+    def load_reservations(self):
+        return
+    
+
 
 if __name__ == "__main__":
     root = tk.Tk()
