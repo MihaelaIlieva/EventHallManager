@@ -1,6 +1,6 @@
 import requests
 import tkinter as tk
-from tkinter import messagebox, Label, PhotoImage, Button
+from tkinter import messagebox, Label, PhotoImage, Button, Entry
 from PIL import Image, ImageTk
 import os
 
@@ -21,7 +21,7 @@ class StartWindow:
         master.geometry("1720x1060")
         master.config(bg=MAIN_COLOUR)
 
-        title_label = Label(master, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
+        self.title_label = Label(master, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
         
         image_path = os.path.join(os.path.dirname(__file__), "images", "image.png")
         pil_image = Image.open(image_path)
@@ -35,19 +35,73 @@ class StartWindow:
         image_label = tk.Label(self.master, image=self.background_image, borderwidth=0)
         image_label.pack(pady=50)
         
-        login_button = Button(master, text="Вход", width=20, font=("Tahoma", 16), command=self.open_login, background=SECONDARY_COLOUR).pack(pady=30)
-        register_button = Button(master, text="Регистрация", width=20, font=("Tahoma", 16), command=self.open_register, background=SECONDARY_COLOUR).pack(pady=30)
+        self.login_button = Button(master, text="Вход", width=20, font=("Tahoma", 16), command=self.open_login, background=SECONDARY_COLOUR).pack(pady=30)
+        self.register_button = Button(master, text="Регистрация", width=20, font=("Tahoma", 16), command=self.open_register, background=SECONDARY_COLOUR).pack(pady=30)
 
     def open_login(self):
         self.master.withdraw()
         login_window = tk.Toplevel()
-        #LoginWindow(login_window)
+        LoginWindow(login_window)
 
     def open_register(self):
         self.master.withdraw()
         register_window = tk.Toplevel()
         #RegisterWindow(register_window)
 
+class LoginWindow:
+    def __init__(self, master):
+        self.master = master
+        master.title("Вход")
+        master.geometry("1720x1060")
+        master.config(bg=MAIN_COLOUR)
+        
+        self.title_label = Label(master, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
+        
+        image_path = os.path.join(os.path.dirname(__file__), "images", "image.png")
+        pil_image = Image.open(image_path)
+
+       
+        max_width, max_height = 650, 350
+        pil_image.thumbnail((max_width, max_height))
+
+        self.background_image = ImageTk.PhotoImage(pil_image)
+
+        image_label = Label(self.master, image=self.background_image, borderwidth=0)
+        image_label.pack(pady=50)
+
+        self.username_label = Label(master, text="Потребителско име:",font=("Tahoma", 14), fg=SECONDARY_COLOUR , background=MAIN_COLOUR).pack(pady=10)
+        self.username_entry = Entry(master, width=20)
+        self.username_entry.pack(pady=10)
+        
+        self.password_label = Label(master, text="Парола:", font=("Tahoma", 14), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=10)
+        self.password_entry = Entry(master, width=20, show="*")
+        self.password_entry.pack(pady=10)
+
+        self.login_button = Button(master, text="Вход", command=self.login, width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR).pack(pady=20)
+
+    def login(self):
+        name = self.username_entry.get()
+        password = self.password_entry.get()
+
+        # only admin profile
+        if name == "mihaela" and password == "mihaela1":
+            messagebox.showinfo("Успешен вход", "Добре дошла, админ Mihaela!")
+            self.master.destroy()
+            #AdminWindow()
+            return
+
+        try:
+            response = requests.post(f"{USER_API}/login", json={"username": name, "password": password})
+            if response.status_code == 200:
+                data = response.json()
+                messagebox.showinfo("Успешен вход", f"Добре дошъл, {name}!")
+                self.master.destroy()
+                #UserWindow(name, data.get("token"))
+            else:
+                messagebox.showerror("Грешка", "Невалидни данни за вход")
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Проблем с връзката към сървъра:\n{e}")
+            
 
 if __name__ == "__main__":
     root = tk.Tk()
