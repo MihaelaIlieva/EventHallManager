@@ -100,7 +100,7 @@ class LoginWindow:
                 data = response.json()
                 messagebox.showinfo("Успешен вход", f"Добре дошъл, {name}!")
                 self.master.destroy()
-                UserWindow(name, data.get("token"))
+                UserWindow(name)
             else:
                 messagebox.showerror("Грешка", "Невалидни данни за вход")
         except Exception as e:
@@ -161,7 +161,7 @@ class RegisterWindow:
             if response.status_code == 201:
                 messagebox.showinfo("Успех", "Регистрацията е успешна.")
                 self.master.destroy()
-                UserWindow(name, None)
+                UserWindow(name)
             else:
                 messagebox.showerror("Грешка", f"Неуспешна регистрация: {response.text}")
         except Exception as e:
@@ -169,18 +169,21 @@ class RegisterWindow:
 
 # finish user window with making reservations
 class UserWindow:
-    def __init__(self, username, token):
-        self.token = token
+    def __init__(self, username):
+
         self.username = username
+        self.user_id = self.get_user_id_by_username(username)
 
         self.window = tk.Toplevel()
         self.window.title("Потребителски панел")
         self.window.geometry("1720x1060")
         self.window.config(bg=MAIN_COLOUR)
         
-        self.title_label = Label(self.window, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=35)
+        self.title_label = Label(self.window, text="LuxeHalls - правилното място за избор на зала за вашето събитие", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR)
+        self.title_label.pack(pady=35)
         
-        self.greeting_label = Label(self.window, text=f"Добре дошъл, {username}!", font=("Tahoma", 20), fg=SECONDARY_COLOUR, background=MAIN_COLOUR).pack(pady=50)
+        self.greeting_label = Label(self.window, text=f"Добре дошъл, {username}!", font=("Tahoma", 20), fg=SECONDARY_COLOUR, background=MAIN_COLOUR)
+        self.greeting_label.pack(pady=50)
 
         
         image_path = os.path.join(os.path.dirname(__file__), "images", "image.png")
@@ -194,21 +197,219 @@ class UserWindow:
         image_label = Label(self.window, image=self.background_image, borderwidth=0)
         image_label.pack(pady=50)
 
-        self.get_halls_button = Button(self.window, text="Виж зали", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=self.load_rooms).pack(pady=20)
-
-        self.get_reservations_button = Button(self.window, text="Виж резервации", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=self.load_reservations).pack(pady=20)
-        
-        self.rooms_listbox = tk.Listbox(self.window)
-        self.rooms_listbox.pack(pady=10, fill=tk.BOTH, expand=True)
+        self.make_reservation_button = Button(self.window, text="Направи резервация", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=self.make_reservation)
+        self.make_reservation_button.pack(pady=20)
+        self.get_reservations_button = Button(self.window, text="Моите резервации", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=self.load_reservations)
+        self.get_reservations_button.pack(pady=20)
 
         self.window.mainloop()
+        
+    def get_user_id_by_username(self, username):
+            try:
+                response = requests.get(f"{USER_API}/users/search/username/{username}")
+                if response.status_code == 200:
+                    user = response.json()
+                    return user["id"]
+                else:
+                    messagebox.showerror("Грешка", f"Потребителят не е намерен.")
+            except Exception as e:
+                messagebox.showerror("Грешка", f"Грешка при търсене на потребител: \n{e}")
+            return None
 
-    def load_rooms(self):
-        return
+    def make_reservation(self):
+        self.create_window = tk.Toplevel(self.window)
+        self.create_window.title("Създаване на резервация")
+        self.create_window.geometry("1720x1060")
+        self.create_window.config(bg=MAIN_COLOUR)
+        
+        self.title_label = Label(self.create_window, text="Създаване на резервация", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR)
+        self.title_label.pack(pady=35)
+        self.choose_label = Label(self.create_window, text="Избери зала:", font=("Tahoma", 20), fg=SECONDARY_COLOUR, background=MAIN_COLOUR)
+        self.choose_label.pack(pady=35)
+        
+        try:
+            response = requests.get(f"{ROOM_API}/room")
+            self.rooms = response.json()
+
+            if isinstance(self.rooms, dict):
+                self.rooms = [self.rooms]
+
+            self.room_map = {}
+            room_options = []
+
+            for r in self.rooms:
+                display_name = f"{r['name']} (капацитет: {r['capacity']})"
+                room_options.append(display_name)
+                self.room_map[display_name] = r['id']
+
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Грешка при зареждане на залите: \n{e}")
+            return
+        
+        self.selected_room = tk.StringVar(self.create_window)
+        self.selected_room.set(room_options[0])
+
+        self.options_menu = tk.OptionMenu(self.create_window, self.selected_room, *room_options)
+        self.options_menu.pack()
+        
+        
+        self.start_time_label = Label(self.create_window, text="Начало (гггг-мм-дд чч:мм):")
+        self.start_time_label.pack()
+        self.start_time_entry = Entry(self.create_window)
+        self.start_time_entry.pack()
+
+        self.end_time_label = Label(self.create_window, text="Край (гггг-мм-дд чч:мм):").pack()
+        self.end_time_entry = Entry(self.create_window)
+        self.end_time_entry.pack()
+        
+        self.book_button = Button(self.create_window, text="Резервирай", command=self.submit_reservation)
+        self.book_button.pack(pady=20)
+        
+    def submit_reservation(self):
+        selected_display = self.selected_room.get()
+        room_id = self.room_map.get(selected_display)
+
+        if not room_id:
+            messagebox.showerror("Грешка", "Не е избрана валидна зала.")
+            return
+
+        data = {
+            "user_id": self.user_id,
+            "room_id": room_id,
+            "start_time": self.start_time_entry.get(),
+            "end_time": self.end_time_entry.get()
+        }
+
+        try:
+            response = requests.post(f"{RESERVATION_API}/reservations", json=data)
+            if response.status_code == 201:
+                messagebox.showinfo("Успешно", "Резервацията е създадена.")
+                self.create_window.destroy()
+            else:
+                messagebox.showerror("Грешка", f"Проблем при създаване на резервацията:\n{response.text}")
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Проблем със сървъра:\n{e}")
 
 
     def load_reservations(self):
-        return
+        try:
+            response = requests.get(f"{RESERVATION_API}/reservations")
+            if response.status_code != 200:
+                raise Exception(response.text)
+            all_reservations = response.json()
+            
+            self.reservations = [r for r in all_reservations if r.get("user_id") == self.user_id]
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Грешка при зареждане на резервациите:\n{e}")
+            return
+
+        self.reservations_window = tk.Toplevel(self.window)
+        self.reservations_window.title("Моите резервации")
+        self.reservations_window.geometry("1720x1060")
+        self.reservations_window.config(bg=MAIN_COLOUR)
+
+        title_label = Label(self.reservations_window, text="Моите резервации", font=("Tahoma", 26), fg=SECONDARY_COLOUR, background=MAIN_COLOUR)
+        title_label.pack(pady=30)
+
+        self.res_listbox = tk.Listbox(self.reservations_window, width=120, font=("Tahoma", 14))
+        self.res_listbox.pack(pady=20)
+
+        self.reservation_map = {}
+
+        for i, res in enumerate(self.reservations):
+            
+            room_name = "Непозната зала"
+            if isinstance(res.get("room"), dict):
+                room_name = res["room"].get("name", "Непозната зала")
+            elif "room_id" in res:
+                room_name = f"Зала #{res['room_id']}"
+
+            start_time = res.get("start_time", "")
+            end_time = res.get("end_time", "")
+            display = f"Зала: {room_name} | От: {start_time} | До: {end_time}"
+            self.res_listbox.insert(i, display)
+            self.reservation_map[i] = res['id']
+
+        
+        self.edit_button = Button(self.reservations_window, text="Редактирай", font=("Tahoma", 14), command=self.edit_reservation)
+        self.edit_button.pack(pady=10)
+
+        self.cancel_button = Button(self.reservations_window, text="Откажи", font=("Tahoma", 14), command=self.cancel_reservation)
+        self.cancel_button.pack(pady=10)
+
+
+    def edit_reservation(self):
+        selected_index = self.res_listbox.curselection()
+        if not selected_index:
+            messagebox.showwarning("Внимание", "Моля, изберете резервация за редактиране.")
+            return
+        res_id = self.reservation_map[selected_index[0]]
+
+        selected_res = next((r for r in self.reservations if r["id"] == res_id), None)
+        if not selected_res:
+            messagebox.showerror("Грешка", "Неуспешно намиране на резервацията.")
+            return
+
+        self.edit_window = tk.Toplevel(self.reservations_window)
+        self.edit_window.title("Редактиране на резервация")
+        self.edit_window.geometry("600x400")
+        self.edit_window.config(bg=MAIN_COLOUR)
+
+        Label(self.edit_window, text="Начало (гггг-мм-дд чч:мм):", bg=MAIN_COLOUR).pack(pady=10)
+        self.edit_start_entry = Entry(self.edit_window)
+        self.edit_start_entry.insert(0, selected_res["start_time"])
+        self.edit_start_entry.pack()
+
+        Label(self.edit_window, text="Край (гггг-мм-дд чч:мм):", bg=MAIN_COLOUR).pack(pady=10)
+        self.edit_end_entry = Entry(self.edit_window)
+        self.edit_end_entry.insert(0, selected_res["end_time"])
+        self.edit_end_entry.pack()
+
+        Button(self.edit_window, text="Запази", command=lambda: self.submit_edit(res_id)).pack(pady=20)
+
+    def submit_edit(self, res_id):
+        new_start = self.edit_start_entry.get()
+        new_end = self.edit_end_entry.get()
+
+        data = {
+            "start_time": new_start,
+            "end_time": new_end
+        }
+
+        try:
+            response = requests.put(f"{RESERVATION_API}/reservations/{res_id}", json=data)
+            if response.status_code == 200:
+                messagebox.showinfo("Успешно", "Резервацията е обновена.")
+                self.edit_window.destroy()
+                self.reservations_window.destroy()
+                self.load_reservations()
+            else:
+                messagebox.showerror("Грешка", f"Неуспешно редактиране:\n{response.text}")
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Проблем със сървъра:\n{e}")
+
+    def cancel_reservation(self):
+        selected_index = self.res_listbox.curselection()
+        if not selected_index:
+            messagebox.showwarning("Внимание", "Моля, изберете резервация за отказване.")
+            return
+
+        res_id = self.reservation_map[selected_index[0]]
+        confirm = messagebox.askyesno("Потвърждение", "Сигурни ли сте, че искате да отмените резервацията?")
+        if not confirm:
+            return
+
+        try:
+            response = requests.delete(f"{RESERVATION_API}/reservations/{res_id}")
+            if response.status_code == 200:
+                messagebox.showinfo("Успешно", "Резервацията е отменена.")
+                self.reservations_window.destroy()
+                self.load_reservations()
+            else:
+                messagebox.showerror("Грешка", f"Неуспешно отказване:\n{response.text}")
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Проблем със сървъра:\n{e}")
+            
     
 class AdminWindow:
     def __init__(self):
@@ -396,8 +597,7 @@ class AdminWindow:
         
         self.delete_hall_button = Button(self.delete_window, text="Премахни", width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR, command=submit)
         self.delete_hall_button.pack(pady=20)
-
-                   
+                 
     def load_reservations(self):
         try:
             response = requests.get(f"{RESERVATION_API}/reservations")
