@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import messagebox, Label, PhotoImage, Button, Entry
 from PIL import Image, ImageTk
 import os
+import openai
 
 image_path = os.path.join(os.path.dirname(__file__), "images", "image.png")
 
@@ -13,6 +14,7 @@ RESERVATION_API = "http://localhost:5002"
 MAIN_COLOUR = "#5f5d57"
 SECONDARY_COLOUR = "#e9ca7a"
 
+openai.api_key = ""
 class StartWindow:
     def __init__(self, master):
         self.master = master
@@ -140,8 +142,8 @@ class RegisterWindow:
         self.password_entry = Entry(master, width=20, show="*")
         self.password_entry.pack(pady=10)
 
-        self.register_button = Button(master, text="Регистрация", command=self.register, width=20, font=("Tahoma", 16), background=SECONDARY_COLOUR).pack(pady=20)
-
+        self.register_button = Button(master, text="Регистрация", command=self.register, width=25, font=("Tahoma", 16), background=SECONDARY_COLOUR).pack(pady=20)
+        self.suggest_username_button = Button(master, text="Предложи потребителско име", command=self.suggest_username, width=25, font=("Tahoma", 16), background=SECONDARY_COLOUR).pack(pady=20)
 
     def register(self):
         email = self.email_entry.get()
@@ -166,6 +168,41 @@ class RegisterWindow:
                 messagebox.showerror("Грешка", f"Неуспешна регистрация: {response.text}")
         except Exception as e:
             messagebox.showerror("Грешка", f"Проблем с връзката към сървъра:\n{e}")
+
+    def suggest_username(self):
+        email = self.email_entry.get()
+        if not email:
+            messagebox.showerror("Грешка", "Моля, въведи имейл, за да получиш предложения.")
+            return
+        
+        prompt = f"Предложи 3 подходящи потребителски имена, базирани на имейла: {email}, кратки и лесни за запомняне."
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Ти си асистент, който предлага потребителски имена."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=50,
+                n=1,
+                stop=None,
+                temperature=0.8
+            )
+            text = response.choices[0].message['content'].strip()
+            suggestions = text.split('\n')
+            suggestions = [s.strip("1234567890. ") for s in suggestions if s.strip()]
+            
+            suggestion_text = "Предложения за потребителско име:\n" + "\n".join(suggestions)
+            messagebox.showinfo("Предложения", suggestion_text)
+            
+            if suggestions:
+                self.username_entry.delete(0, tk.END)
+                self.username_entry.insert(0, suggestions[0])
+                
+        except Exception as e:
+            messagebox.showerror("Грешка", f"Неуспешна връзка с ChatGPT API:\n{e}")
+
 
 # finish user window with making reservations
 class UserWindow:
